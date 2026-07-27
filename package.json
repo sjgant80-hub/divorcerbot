@@ -4,7 +4,7 @@
   "type": "module",
   "main": "divorce.mjs",
   "scripts": {
-    "test": "node --test divorce.test.mjs precedents.test.mjs"
+    "test": "node --test divorce.test.mjs precedents.test.mjs ingest.test.mjs"
   },
   "license": "MIT"
 }

@@ -48,6 +48,9 @@
   .big{font-size:1.9rem;font-weight:700}
   a{color:var(--acc)}
   .muted{color:var(--dim);font-size:.9rem}
+  .drop{border:1.5px dashed var(--line);border-radius:12px;padding:16px;text-align:center;background:var(--panel2);margin-top:6px}
+  .drop.over{border-color:var(--acc);background:var(--panel)}
+  #ingestList div{font-size:.85rem;margin:5px 0}
   nav.toc{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--line);margin:0 -18px 0;padding:8px 18px;display:flex;gap:14px;overflow-x:auto;font-size:.85rem;z-index:5}
   nav.toc a{color:var(--dim);text-decoration:none;white-space:nowrap}
   nav.toc a:hover{color:var(--acc)}
@@ -189,8 +192,14 @@
       <label id="baseUrlLbl" style="display:none">Base URL (OpenAI-compatible)</label>
       <input id="baseUrl" style="display:none" placeholder="https://api.your-provider.com/v1">
     </div>
-    <label>Your data</label>
-    <textarea id="dump" placeholder="Paste everything here. The more context, the better the analysis."></textarea>
+    <label>Add files — any format (PDF, Word, images &amp; screenshots, email, CSV, text)</label>
+    <div id="drop" class="drop">📎 Drag files here, or <button type="button" class="ghost" id="pickBtn" style="margin-top:0">choose files</button>
+      <input id="files" type="file" multiple accept="*/*" style="display:none">
+      <div class="muted" style="margin-top:8px">Read on your device: PDFs are parsed, images/screenshots are OCR’d, Word docs extracted. Your document content is <strong>not uploaded</strong> — only the extraction libraries load from a CDN.</div>
+    </div>
+    <div id="ingestList"></div>
+    <label>Your data (typed, pasted, or extracted from the files above)</label>
+    <textarea id="dump" placeholder="Paste everything here — or just drop the files above. The more context, the better the analysis."></textarea>
     <button onclick="doAnalyse()" id="analyseBtn">Analyse</button>
     <span id="aiStatus" class="muted"></span>
     <div id="aiOut" class="out"></div>
@@ -238,6 +247,7 @@
 <script type="module">
 import * as D from './divorce.mjs';
 import * as P from './precedents.mjs';
+import * as I from './ingest.mjs';
 const $ = (id)=>document.getElementById(id);
 const money = (n)=>'£'+Number(n).toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2});
 const esc = (s)=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
@@ -365,6 +375,35 @@ async function callWebLLM(sys,user,setStatus){
   const r = await webllmEngine.chat.completions.create({messages:[{role:'system',content:sys},{role:'user',content:user}]});
   return r.choices[0].message.content;
 }
+// ---- all-format file ingestion (client-side; only the libraries come from a CDN) ----
+const EXTRACT = {
+  readText: (f)=>f.text(),
+  extractPdf: async (f)=>{
+    const pdfjs = await import('https://cdn.jsdelivr.net/npm/pdfjs-dist@4/build/pdf.min.mjs');
+    pdfjs.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@4/build/pdf.worker.min.mjs';
+    const doc = await pdfjs.getDocument({data:await f.arrayBuffer()}).promise;
+    const out=[]; for(let i=1;i<=doc.numPages;i++){ const p=await doc.getPage(i); const c=await p.getTextContent(); out.push(c.items.map(it=>it.str).join(' ')); }
+    return out.join('\n\n');
+  },
+  extractImage: async (f)=>{ const T=(await import('https://esm.run/tesseract.js')).default; const { data }=await T.recognize(f,'eng'); return data.text; },
+  extractDocx: async (f)=>{ const m=(await import('https://esm.run/mammoth')).default; const { value }=await m.extractRawText({arrayBuffer:await f.arrayBuffer()}); return value; },
+};
+async function handleFiles(list){
+  for(const f of Array.from(list||[])){
+    const row=document.createElement('div'); row.className='muted'; row.textContent=`⏳ ${f.name} — reading…`; $('ingestList').appendChild(row);
+    const r=await I.ingest(f, EXTRACT);
+    if(r.error){ row.innerHTML=`⚠️ <span class="cp">${esc(f.name)}: ${esc(r.error)}</span>`; }
+    else { row.innerHTML=`✅ ${esc(f.name)} <span class="k">${r.chars} chars</span> <span class="muted">(${esc(r.kind)})</span>`;
+      const cur=$('dump').value; $('dump').value=(cur?cur+'\n\n':'')+`===== ${f.name} (${r.kind}) =====\n`+r.text; }
+  }
+}
+$('pickBtn').onclick=()=>$('files').click();
+$('files').onchange=(e)=>handleFiles(e.target.files);
+const dz=$('drop');
+['dragover','dragenter'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('over');}));
+['dragleave','dragend'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('over');}));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('over');handleFiles(e.dataTransfer.files);});
+
 window.doAnalyse = async ()=>{
   const dump=$('dump').value.trim(); if(!dump){ $('aiStatus').textContent='Paste your data first.'; return; }
   const btn=$('analyseBtn'), setStatus=(t)=>$('aiStatus').textContent=t;
