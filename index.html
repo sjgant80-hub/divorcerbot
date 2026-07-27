@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>divorcerbot · UK divorce self-help (England & Wales, Scotland, NI)</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1b2330">
+<style>
+  :root{
+    --bg:#0f1319; --panel:#161c26; --panel2:#1c2430; --ink:#e8edf4; --dim:#9aa7b8; --line:#28313f;
+    --acc:#6ea8fe; --good:#5fd0a6; --warn:#e6b566; --bad:#e0728a; --law:#c3a6ff;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; --r:14px;
+  }
+  @media (prefers-color-scheme:light){:root{--bg:#f4f6fa;--panel:#fff;--panel2:#f0f3f8;--ink:#16202c;--dim:#5a6676;--line:#e2e8f0;--acc:#2f6fe0;--good:#0e8f63;--warn:#a5610f;--bad:#c23b57;--law:#6b45c9;}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  .wrap{max-width:900px;margin:0 auto;padding:24px 18px 96px}
+  h1{font-size:2rem;margin:0 0 2px;letter-spacing:-.02em}
+  h1 .bot{color:var(--acc)}
+  .sub{color:var(--dim);margin:0 0 18px}
+  h2{font-size:1.02rem;text-transform:uppercase;letter-spacing:.07em;color:var(--dim);margin:30px 0 12px;font-weight:600}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;margin:14px 0}
+  .banner{border-left:4px solid var(--warn);background:var(--panel2)}
+  .safety{border-left:4px solid var(--bad)}
+  label{display:block;font-size:.9rem;color:var(--dim);margin:10px 0 4px}
+  input,select,textarea{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:9px;color:var(--ink);padding:10px 12px;font:inherit}
+  textarea{min-height:120px;resize:vertical;font-size:.95rem}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media (max-width:560px){.row{grid-template-columns:1fr}}
+  button{background:var(--acc);color:#08111f;border:0;border-radius:10px;padding:11px 18px;font:600 1rem inherit;cursor:pointer;margin-top:12px}
+  button.ghost{background:transparent;color:var(--acc);border:1px solid var(--line)}
+  button:disabled{opacity:.5;cursor:progress}
+  .chip{display:inline-flex;align-items:center;gap:6px;font-size:.85rem;color:var(--dim);background:var(--panel2);border:1px solid var(--line);border-radius:20px;padding:4px 11px;margin:3px 4px 0 0}
+  .cb{display:flex;gap:9px;align-items:flex-start;margin:7px 0;font-size:.95rem;color:var(--ink)}
+  .cb input{width:auto;margin-top:4px}
+  .out{white-space:pre-wrap}
+  .arg{border:1px solid var(--line);border-left:3px solid var(--law);border-radius:10px;padding:14px 16px;margin:12px 0;background:var(--panel2)}
+  .arg h3{margin:0 0 6px;font-size:1.05rem;color:var(--law)}
+  .cite{font-family:var(--mono);font-size:.82rem;color:var(--acc)}
+  .cite a{color:var(--acc)}
+  .lbl{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);margin-top:10px}
+  .cp{color:var(--warn)} .ev{color:var(--good)}
+  details{border:1px solid var(--line);border-radius:10px;padding:0 14px;margin:10px 0;background:var(--panel)}
+  details[open]{padding-bottom:12px}
+  summary{cursor:pointer;padding:12px 0;font-weight:600}
+  .k{font-family:var(--mono);color:var(--good)}
+  .big{font-size:1.9rem;font-weight:700}
+  a{color:var(--acc)}
+  .muted{color:var(--dim);font-size:.9rem}
+  nav.toc{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--line);margin:0 -18px 0;padding:8px 18px;display:flex;gap:14px;overflow-x:auto;font-size:.85rem;z-index:5}
+  nav.toc a{color:var(--dim);text-decoration:none;white-space:nowrap}
+  nav.toc a:hover{color:var(--acc)}
+  .pill{display:inline-block;font-size:.7rem;border:1px solid var(--line);border-radius:6px;padding:2px 7px;color:var(--dim);margin-left:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>divorcer<span class="bot">bot</span></h1>
+  <p class="sub">UK divorce self-help · England &amp; Wales · Scotland · Northern Ireland · <span class="pill">not a lawyer</span></p>
+
+  <nav class="toc">
+    <a href="#how">How it works</a><a href="#start">Start</a><a href="#timeline">Timeline</a>
+    <a href="#cms">Child maintenance</a><a href="#strategy">Case strategy</a><a href="#ai">Analyse your data</a>
+    <a href="#advice">Get advice</a><a href="#library">Case library</a>
+  </nav>
+
+  <div class="card banner">
+    <strong>This is not legal advice.</strong> divorcerbot gives general legal information and does deterministic
+    calculations from figures you enter. It cannot know your circumstances and can be wrong for your case. It is a
+    tool to help you <em>understand the law and prepare</em> so you can get real advice affordably — see
+    <a href="#advice">Your route to advice</a>.
+  </div>
+  <div class="card safety">
+    🛟 <strong>If you are in danger or experiencing domestic abuse</strong>, your safety comes first. Free, 24/7,
+    confidential: <strong>0808 2000 247</strong> (Refuge National Domestic Abuse Helpline). Emergency: <strong>999</strong>
+    (if you can’t speak, dial 999 then press <strong>55</strong> from a mobile). Abuse can exempt you from mediation and may qualify you for legal aid.
+  </div>
+
+  <!-- HOW IT WORKS -->
+  <h2 id="how">How it works</h2>
+  <div class="card">
+    <p>Two engines, deliberately separate:</p>
+    <p>🔒 <strong>Deterministic engines (in your browser).</strong> Eligibility, the divorce timeline, the Child
+    Maintenance calculation, the s.25 financial factors and the case-law strategy all run as plain code on your
+    device. <strong>No data leaves your browser.</strong> Same inputs → same answer, every time — because the law and
+    the CMS formula are rules, not opinions. Every figure and case is sourced (see <a href="#library">Case library</a>).</p>
+    <p>🧠 <strong>The AI analyser (your choice of engine).</strong> To pour in the messy pile of a real divorce —
+    emails, statements, a jumble of facts — you choose how it’s read:</p>
+    <ul>
+      <li><strong>WebLLM (fully local)</strong> — a model runs <em>inside your browser</em>. Nothing is uploaded.
+      Best for private “doc only” work: organising, summarising, first-pass sorting of sensitive material.</li>
+      <li><strong>Bring Your Own Key (Claude or any provider)</strong> — paste <em>your own</em> API key and the
+      analysis runs on that provider under your account, for heavier reasoning. The key is stored only on this
+      device; your data goes only to the provider you choose. divorcerbot never has a key of its own.</li>
+    </ul>
+    <p>Either way the AI is <strong>grounded in the verified corpus above</strong> — it is instructed to use only the
+    real, cited authorities in this tool, to stay even-handed (every argument gets its counter-argument), to keep any
+    child’s welfare paramount, and never to invent case law. It is a drafting aid, still not advice.</p>
+  </div>
+
+  <!-- START: jurisdiction + eligibility -->
+  <h2 id="start">Start — where, and can you apply?</h2>
+  <div class="card">
+    <div class="row">
+      <div>
+        <label>Jurisdiction (the law differs in each)</label>
+        <select id="jur">
+          <option value="england-wales">England &amp; Wales (no-fault)</option>
+          <option value="scotland">Scotland</option>
+          <option value="northern-ireland">Northern Ireland</option>
+        </select>
+      </div>
+      <div>
+        <label>Years married</label>
+        <input id="years" type="number" min="0" step="0.5" value="8">
+      </div>
+    </div>
+    <label class="cb"><input type="checkbox" id="recognised" checked> Our marriage is legally recognised in the UK</label>
+    <label class="cb"><input type="checkbox" id="connection" checked> One of us is habitually resident / domiciled in this jurisdiction</label>
+    <button onclick="doEligibility()">Check eligibility</button>
+    <div id="eligOut"></div>
+  </div>
+
+  <!-- TIMELINE -->
+  <h2 id="timeline">Timeline (England &amp; Wales)</h2>
+  <div class="card">
+    <p class="muted">No-fault since 6 April 2022. From the application being issued: <strong>20 weeks</strong> to the
+    conditional order, then <strong>6 weeks + 1 day</strong> to the final order. Court fee <strong>£612</strong>.</p>
+    <label>Date the application was issued</label>
+    <input id="issued" type="date">
+    <button onclick="doTimeline()">Work out my dates</button>
+    <div id="tlOut"></div>
+  </div>
+
+  <!-- CMS -->
+  <h2 id="cms">Child maintenance estimate</h2>
+  <div class="card">
+    <p class="muted">Standard CMS (2012 scheme) formula. An estimate — confirm on the
+    <a href="https://www.gov.uk/calculate-child-maintenance" target="_blank" rel="noopener">official GOV.UK calculator</a>.</p>
+    <div class="row">
+      <div><label>Paying parent’s gross weekly income (£)</label><input id="gwi" type="number" min="0" value="600"></div>
+      <div><label>Number of children</label><input id="kids" type="number" min="1" value="2"></div>
+    </div>
+    <div class="row">
+      <div><label>Nights/year the paying parent has them</label><input id="nights" type="number" min="0" value="0"></div>
+      <div><label>Other children living with the paying parent</label><input id="otherkids" type="number" min="0" value="0"></div>
+    </div>
+    <label class="cb"><input type="checkbox" id="benefits"> Paying parent receives qualifying benefits</label>
+    <button onclick="doCms()">Estimate</button>
+    <div id="cmsOut"></div>
+  </div>
+
+  <!-- CASE STRATEGY (deterministic) -->
+  <h2 id="strategy">Case strategy — cited arguments (England &amp; Wales)</h2>
+  <div class="card">
+    <p class="muted">Tick what applies. This maps your facts to the real, cited authorities — each with its
+    counter-argument and the evidence you’d need. Argument scaffolding, not a prediction.</p>
+    <div id="facts"></div>
+    <div class="row">
+      <div><label>Their former role (if under-employed)</label><input id="formerRole" placeholder="e.g. Head of English"></div>
+      <div><label>Their former salary (£)</label><input id="formerSalary" type="number" placeholder="75000"></div>
+    </div>
+    <div class="row">
+      <div><label>Relocation distance (miles)</label><input id="miles" type="number" placeholder="120"></div>
+      <div><label>Years since separation</label><input id="sepYears" type="number" placeholder="4"></div>
+    </div>
+    <button onclick="doStrategy()">Build the arguments</button>
+    <div id="stratOut"></div>
+  </div>
+
+  <!-- AI ANALYSER -->
+  <h2 id="ai">Analyse your data (AI)</h2>
+  <div class="card">
+    <p class="muted">Paste the messy pile — a timeline, emails, a witness statement, whatever you have. The analyser
+    reads it against the s.25 framework and the cited cases and returns a structured analysis + a draft position
+    statement. Choose your engine — this is where the privacy choice lives.</p>
+    <label>Engine</label>
+    <select id="engine">
+      <option value="webllm">WebLLM — fully local, nothing leaves your device (best for private doc work)</option>
+      <option value="anthropic">Claude — Bring Your Own Key (heavier reasoning)</option>
+      <option value="openai">Any OpenAI-compatible provider — Bring Your Own Key</option>
+    </select>
+    <div id="byok" style="display:none">
+      <div class="row">
+        <div><label>API key (stored only on this device)</label><input id="apiKey" type="password" placeholder="sk-…"></div>
+        <div><label>Model</label><input id="model" placeholder="claude-sonnet-5 / gpt-…"></div>
+      </div>
+      <label id="baseUrlLbl" style="display:none">Base URL (OpenAI-compatible)</label>
+      <input id="baseUrl" style="display:none" placeholder="https://api.your-provider.com/v1">
+    </div>
+    <label>Your data</label>
+    <textarea id="dump" placeholder="Paste everything here. The more context, the better the analysis."></textarea>
+    <button onclick="doAnalyse()" id="analyseBtn">Analyse</button>
+    <span id="aiStatus" class="muted"></span>
+    <div id="aiOut" class="out"></div>
+  </div>
+
+  <!-- ADVICE -->
+  <h2 id="advice">Your route to advice — how this levels the field</h2>
+  <div class="card">
+    <p>This tool is built to get you from “I can’t afford a lawyer and they can” to <strong>represented, or well-prepared</strong>.
+    Two moves matter most:</p>
+    <div class="arg">
+      <h3>1 · Make them fund your lawyer — a Legal Services Payment Order</h3>
+      <p>If the other side has money (or family money) and you don’t, you can apply under <span class="cite">MCA 1973 s.22ZA</span>
+      for an order that <strong>they pay your legal costs</strong> so you can be represented. The principles are in
+      <span class="cite"><a href="https://www.bailii.org/ew/cases/EWHC/Fam/2014/611.html" target="_blank" rel="noopener">Rubin v Rubin [2014] EWHC 611 (Fam)</a></span>.
+      Family-funded opponents are the classic case for it. Take the “Level the funding field” output above to a solicitor.</p>
+    </div>
+    <div class="arg">
+      <h3>2 · Walk in prepared — turn hours of a solicitor’s time into minutes</h3>
+      <p>Use this tool to arrive with your facts sorted, your numbers run, and the relevant authorities already
+      identified. A first appointment then costs a fraction and goes further. Generate a position statement in the
+      analyser and bring it.</p>
+    </div>
+    <p><strong>Free &amp; low-cost help:</strong></p>
+    <ul>
+      <li><a href="https://www.gov.uk/check-legal-aid" target="_blank" rel="noopener">Check if you qualify for legal aid</a> — available for family cases involving domestic abuse or child protection, and means-tested.</li>
+      <li><a href="https://weareadvocate.org.uk/" target="_blank" rel="noopener">Advocate</a> (the Bar’s pro bono charity) &amp; <a href="https://www.lawworks.org.uk/" target="_blank" rel="noopener">LawWorks</a> — free representation/clinics.</li>
+      <li><a href="https://www.citizensadvice.org.uk/family/" target="_blank" rel="noopener">Citizens Advice — family</a>, and university law clinics.</li>
+      <li><a href="https://resolution.org.uk/find-a-member/" target="_blank" rel="noopener">Resolution</a> — find a constructive family solicitor/mediator.</li>
+      <li><a href="https://www.gov.uk/looking-after-children-divorce/mediation" target="_blank" rel="noopener">Family mediation</a> (a MIAM) — often required before court; you can be exempt if there’s domestic abuse.</li>
+      <li>Representing yourself: the <a href="https://www.gov.uk/represent-yourself-in-court" target="_blank" rel="noopener">litigant-in-person guidance</a> and a <a href="https://www.gov.uk/going-to-court-without-a-lawyer" target="_blank" rel="noopener">McKenzie friend</a> for support in the room.</li>
+    </ul>
+    <p class="muted">On the pension: for anything serious (like an Armed Forces pension) insist on a <strong>PODE
+    (Pension on Divorce Expert)</strong> report and a CETV — that is specialist work no self-help tool replaces.</p>
+  </div>
+
+  <!-- CASE LIBRARY -->
+  <h2 id="library">Case library &amp; sources</h2>
+  <div class="card"><div id="libOut"></div></div>
+
+  <p class="muted" style="margin-top:24px">divorcerbot · sovereign, offline-first, zero-dependency · MIT ·
+  every rule sourced to GOV.UK / legislation.gov.uk. Information, not advice.</p>
+</div>
+
+<script type="module">
+import * as D from './divorce.mjs';
+import * as P from './precedents.mjs';
+const $ = (id)=>document.getElementById(id);
+const money = (n)=>'£'+Number(n).toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2});
+const esc = (s)=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+// ---- deterministic engines ----
+window.doEligibility = ()=>{
+  const r = D.assessEligibility({ jurisdiction:$('jur').value, marriedYears:parseFloat($('years').value),
+    marriageRecognised:$('recognised').checked, connectionToJurisdiction:$('connection').checked });
+  let h = `<div class="lbl">Verdict</div><p class="${r.eligible?'ev':'cp'}"><strong>${esc(r.summary)}</strong></p>`;
+  if(r.blockers?.length) h+='<div class="lbl cp">Blockers</div><ul>'+r.blockers.map(b=>`<li class="cp">${esc(b)}</li>`).join('')+'</ul>';
+  if(r.notes?.length) h+='<ul>'+r.notes.map(n=>`<li class="muted">${esc(n)}</li>`).join('')+'</ul>';
+  h+=`<div class="lbl">The ground in ${esc(r.jurisdictionName)}</div><p class="muted">${esc(r.ground)}</p>`;
+  if(r.facts?.length) h+='<div class="chip">'+r.facts.map(esc).join('</div><div class="chip">')+'</div>';
+  $('eligOut').innerHTML = h;
+};
+window.doTimeline = ()=>{
+  const r = D.divorceTimeline({ jurisdiction:$('jur').value, applicationIssuedISO:$('issued').value });
+  if(!r.ok){ $('tlOut').innerHTML=`<p class="cp">${esc(r.reason||'Enter a valid date.')}</p>`; return; }
+  if(!r.fixedTimeline){ $('tlOut').innerHTML=`<p class="muted">${esc(r.note)}</p>`; return; }
+  $('tlOut').innerHTML = `<div class="lbl">Your earliest dates</div>`+
+    r.steps.map(s=>`<div class="cb"><span class="k">${esc(s.at)}</span> &nbsp;${esc(s.what)}</div>`).join('')+
+    `<p class="muted">Minimum ${r.minimumTotalWeeks} weeks total. ${esc(r.note)}</p>`;
+};
+window.doCms = ()=>{
+  const r = D.cmsMaintenance({ grossWeeklyIncome:parseFloat($('gwi').value), children:parseInt($('kids').value),
+    sharedCareNights:parseFloat($('nights').value)||0, otherChildren:parseInt($('otherkids').value)||0, onBenefits:$('benefits').checked });
+  if(!r.ok){ $('cmsOut').innerHTML=`<p class="cp">${esc(r.reason)}</p>`; return; }
+  $('cmsOut').innerHTML = `<p class="big k">${money(r.weekly)}/week</p>`+
+    `<p class="muted">${money(r.monthly)}/month · ${money(r.annual)}/year · ${esc(r.rate)} rate</p>`+
+    '<ul class="muted">'+r.notes.map(n=>`<li>${esc(n)}</li>`).join('')+'</ul>'+
+    `<p class="muted">${esc(r.disclaimer)}</p>`;
+};
+
+// ---- case strategy facts ----
+const FACTS = [
+  ['underEmployed','They earn well below what they could (under-employed)'],
+  ['assetsInThirdPartyName','An asset (e.g. a house) is held in someone else’s name'],
+  ['fundedByCoupleOrSpouse','…and it was paid for with our / my money'],
+  ['familyWealth','They have a wealthy family that supports them'],
+  ['fundingImbalance','I can’t easily afford a lawyer; they can'],
+  ['opponentFamilyFunded','Their legal costs are funded by family'],
+  ['militaryPension','A military / Armed Forces pension is involved'],
+  ['pensionInDispute','The pension is in dispute'],
+  ['childrenRelocated','A parent moved the children away'],
+  ['contactObstructed','My contact with the children is being obstructed'],
+  ['wantsSharedTime','I want substantial / shared time with the children'],
+  ['youngChildren','There are young children needing care'],
+  ['healthLimits','There is a genuine health reason affecting work'],
+  ['recentDiagnosisTactical','A recent diagnosis is being relied on in the case'],
+];
+$('facts').innerHTML = FACTS.map(([k,l])=>`<label class="cb"><input type="checkbox" data-fact="${k}"> ${esc(l)}</label>`).join('');
+function collectFacts(){
+  const f={};
+  document.querySelectorAll('[data-fact]').forEach(el=>{ if(el.checked) f[el.dataset.fact]=true; });
+  if($('formerRole').value) f.formerRole=$('formerRole').value;
+  if($('formerSalary').value) f.formerSalaryGBP=parseFloat($('formerSalary').value);
+  if($('miles').value) f.relocationDistanceMiles=parseFloat($('miles').value);
+  if($('sepYears').value) f.separatedYearsAgo=parseFloat($('sepYears').value);
+  if(f.underEmployed && $('formerRole').value) f.qualifications=['(as entered)'];
+  if(f.assetsInThirdPartyName) f.assetsInThirdPartyName=['asset held in a third party’s name'];
+  return f;
+}
+function renderArgs(r, el){
+  if(!r.arguments.length){ el.innerHTML=`<p class="muted">${esc(r.summary)}</p>`; return; }
+  el.innerHTML = `<p class="muted">${esc(r.summary)}</p>`+ r.arguments.map(a=>`
+    <div class="arg"><h3>${esc(a.theme)}</h3>
+      ${a.precedents.map(p=>`<div class="cite"><a href="${p.source}" target="_blank" rel="noopener">${esc(p.name)} ${esc(p.citation)}</a> — ${esc(p.principle)}</div>`).join('')}
+      ${a.statute.map(s=>`<div class="cite"><a href="${s.source}" target="_blank" rel="noopener">${esc(s.ref)}</a></div>`).join('')}
+      <div class="lbl">Argument</div><p>${esc(a.argument)}</p>
+      <div class="lbl cp">Counter-argument</div><p class="cp">${esc(a.counterpoint)}</p>
+      <div class="lbl ev">Evidence you’d need</div><p class="ev">${a.evidenceNeeded.map(esc).join(' · ')}</p>
+    </div>`).join('') + `<p class="muted">${esc(r.caution)} ${esc(r.notAdvice)}</p>`;
+}
+window.lastStrategy = null;
+window.doStrategy = ()=>{ const r=P.caseStrategy(collectFacts()); window.lastStrategy=r; renderArgs(r,$('stratOut')); };
+
+// ---- case library ----
+$('libOut').innerHTML = P.library().map(c=>`<div class="arg"><h3>${esc(c.name)} <span class="cite">${esc(c.citation)}</span></h3>
+  <p class="muted">${esc(c.court)}</p><p>${esc(c.holding)}</p>
+  <div class="cite"><a href="${c.source}" target="_blank" rel="noopener">source</a></div></div>`).join('')+
+  '<div class="lbl">Statute</div>'+Object.values(P.STATUTE).map(s=>`<div class="cite"><a href="${s.source}" target="_blank" rel="noopener">${esc(s.ref)}</a> — ${esc(s.text)}</div>`).join('')+
+  '<div class="lbl">Primary sources</div>'+Object.entries(D.SOURCES).map(([k,u])=>`<div class="cite"><a href="${u}" target="_blank" rel="noopener">${esc(k)}</a></div>`).join('');
+
+// ---- AI analyser (BYOK + WebLLM), grounded in the corpus ----
+$('engine').onchange = ()=>{
+  const e=$('engine').value, byok=e!=='webllm';
+  $('byok').style.display = byok?'block':'none';
+  const oa = e==='openai';
+  $('baseUrl').style.display = $('baseUrlLbl').style.display = oa?'block':'none';
+  $('model').placeholder = e==='anthropic'?'claude-sonnet-5':'gpt-4o-mini / your model';
+};
+function systemPrompt(){
+  const corpus = Object.values(P.CASES).map(c=>`- ${c.name} ${c.citation} (${c.court}): ${c.principle} HELD: ${c.holding}`).join('\n');
+  const statute = Object.values(P.STATUTE).map(s=>`- ${s.ref}: ${s.text}`).join('\n');
+  return `You are a UK family-law analyst helping a litigant in ENGLAND & WALES prepare (financial remedy under MCA 1973 s.25 and children matters under the Children Act 1989). You are NOT a solicitor and must say so.
+RULES:
+1. Use ONLY these verified authorities — never invent or cite any case not listed here:
+${corpus}
+${statute}
+2. Be even-handed: for every argument, give the counter-argument and the evidence needed.
+3. A child's welfare is PARAMOUNT — frame children issues around welfare, never as a parent's "right".
+4. Do NOT stigmatise mental health. If a diagnosis is raised, only test whether it is properly evidenced and its actual effect on earning capacity/parenting — a diagnosis alone proves neither incapacity nor risk.
+5. Output: (a) a structured analysis mapping the user's facts to the argument lines above; (b) a short DRAFT POSITION STATEMENT they could take to a solicitor or court; (c) the KEY EVIDENCE to gather. End with: "This is information to help you prepare, not legal advice — take it to a qualified solicitor."`;
+}
+async function callAnthropic(sys,user,key,model){
+  const res = await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{
+    'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({model:model||'claude-sonnet-5',max_tokens:4000,system:sys,messages:[{role:'user',content:user}]})});
+  if(!res.ok) throw new Error('Provider error '+res.status+' — check your key/model. '+(await res.text()).slice(0,200));
+  const j=await res.json(); return j.content.map(b=>b.text||'').join('');
+}
+async function callOpenAI(sys,user,key,model,base){
+  const res = await fetch((base||'https://api.openai.com/v1').replace(/\/$/,'')+'/chat/completions',{method:'POST',
+    headers:{'content-type':'application/json','authorization':'Bearer '+key},
+    body:JSON.stringify({model:model||'gpt-4o-mini',messages:[{role:'system',content:sys},{role:'user',content:user}]})});
+  if(!res.ok) throw new Error('Provider error '+res.status+' — check your key/model/base URL.');
+  const j=await res.json(); return j.choices[0].message.content;
+}
+let webllmEngine=null;
+async function callWebLLM(sys,user,setStatus){
+  const { CreateMLCEngine } = await import('https://esm.run/@mlc-ai/web-llm');
+  if(!webllmEngine){ setStatus('Downloading a local model (first time only — stays cached, nothing leaves your device)…');
+    webllmEngine = await CreateMLCEngine('Llama-3.2-3B-Instruct-q4f16_1-MLC',{ initProgressCallback:(p)=>setStatus(p.text) }); }
+  setStatus('Analysing locally…');
+  const r = await webllmEngine.chat.completions.create({messages:[{role:'system',content:sys},{role:'user',content:user}]});
+  return r.choices[0].message.content;
+}
+window.doAnalyse = async ()=>{
+  const dump=$('dump').value.trim(); if(!dump){ $('aiStatus').textContent='Paste your data first.'; return; }
+  const btn=$('analyseBtn'), setStatus=(t)=>$('aiStatus').textContent=t;
+  btn.disabled=true; $('aiOut').textContent=''; setStatus('Working…');
+  const sys=systemPrompt();
+  // include the deterministic strategy if it was run, so the AI builds on it
+  const seed = window.lastStrategy ? '\n\n[Deterministic engine already identified these argument lines: '+window.lastStrategy.arguments.map(a=>a.theme).join('; ')+']' : '';
+  const user='Here is my situation and data:\n\n'+dump+seed;
+  try{
+    const e=$('engine').value; let text;
+    if(e==='anthropic') text=await callAnthropic(sys,user,$('apiKey').value.trim(),$('model').value.trim());
+    else if(e==='openai') text=await callOpenAI(sys,user,$('apiKey').value.trim(),$('model').value.trim(),$('baseUrl').value.trim());
+    else text=await callWebLLM(sys,user,setStatus);
+    $('aiOut').textContent=text; setStatus('Done. Remember: information to help you prepare, not advice.');
+    localStorage.setItem('db_engine',e);
+  }catch(err){ setStatus(''); $('aiOut').innerHTML=`<p class="cp">${esc(err.message)}</p>`; }
+  btn.disabled=false;
+};
+$('issued').value = new Date().toISOString().slice(0,10);
+if(localStorage.getItem('db_engine')) $('engine').value=localStorage.getItem('db_engine');
+$('engine').onchange();
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
