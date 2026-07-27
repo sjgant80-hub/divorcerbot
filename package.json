@@ -1,0 +1,10 @@
+{
+  "name": "divorcerbot",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "divorce.mjs",
+  "scripts": {
+    "test": "node --test divorce.test.mjs precedents.test.mjs"
+  },
+  "license": "MIT"
+}
