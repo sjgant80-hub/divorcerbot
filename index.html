@@ -50,7 +50,11 @@
   .muted{color:var(--dim);font-size:.9rem}
   .drop{border:1.5px dashed var(--line);border-radius:12px;padding:16px;text-align:center;background:var(--panel2);margin-top:6px}
   .drop.over{border-color:var(--acc);background:var(--panel)}
-  #ingestList div{font-size:.85rem;margin:5px 0}
+  #dlBar{height:9px;background:var(--panel2);border:1px solid var(--line);border-radius:6px;margin-top:10px;overflow:hidden;display:none}
+  #dlFill{height:100%;width:0;background:var(--acc);transition:width .25s}
+  .frow{display:flex;align-items:center;gap:8px;justify-content:space-between;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:7px 11px;margin:6px 0;font-size:.85rem}
+  .frow .x{background:transparent;border:0;color:var(--bad);cursor:pointer;font-size:1.15rem;line-height:1;margin:0;padding:0 6px}
+  .frow .x:hover{color:var(--acc)}
   nav.toc{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--line);margin:0 -18px 0;padding:8px 18px;display:flex;gap:14px;overflow-x:auto;font-size:.85rem;z-index:5}
   nav.toc a{color:var(--dim);text-decoration:none;white-space:nowrap}
   nav.toc a:hover{color:var(--acc)}
@@ -180,10 +184,23 @@
     statement. Choose your engine — this is where the privacy choice lives.</p>
     <label>Engine</label>
     <select id="engine">
-      <option value="webllm">WebLLM — fully local, nothing leaves your device (best for private doc work)</option>
-      <option value="anthropic">Claude — Bring Your Own Key (heavier reasoning)</option>
+      <option value="webllm">Local AI (WebLLM) — runs in your browser, nothing leaves your device</option>
+      <option value="anthropic">Claude — Bring Your Own Key (heaviest reasoning)</option>
       <option value="openai">Any OpenAI-compatible provider — Bring Your Own Key</option>
     </select>
+    <div id="webllmPanel">
+      <label>Local model — downloads once, then cached &amp; works offline. Needs a WebGPU browser (Chrome/Edge desktop).</label>
+      <div class="row">
+        <div><select id="webllmModel">
+          <option value="Llama-3.2-1B-Instruct-q4f16_1-MLC">Llama 3.2 1B — small &amp; fast (~0.9 GB)</option>
+          <option value="Llama-3.2-3B-Instruct-q4f16_1-MLC">Llama 3.2 3B — better quality (~2.2 GB)</option>
+          <option value="Qwen2.5-3B-Instruct-q4f16_1-MLC">Qwen 2.5 3B (~2.0 GB)</option>
+        </select></div>
+        <div><button type="button" id="dlModel" class="ghost" style="margin-top:0;width:100%">⬇ Download &amp; load model</button></div>
+      </div>
+      <div id="dlBar"><div id="dlFill"></div></div>
+      <div id="dlStatus" class="muted">Not loaded — click download. First time pulls the model (a few minutes); after that it’s instant and offline.</div>
+    </div>
     <div id="byok" style="display:none">
       <div class="row">
         <div><label>API key (stored only on this device)</label><input id="apiKey" type="password" placeholder="sk-…"></div>
@@ -198,8 +215,8 @@
       <div class="muted" style="margin-top:8px">Read on your device: PDFs are parsed, images/screenshots are OCR’d, Word docs extracted. Your document content is <strong>not uploaded</strong> — only the extraction libraries load from a CDN.</div>
     </div>
     <div id="ingestList"></div>
-    <label>Your data (typed, pasted, or extracted from the files above)</label>
-    <textarea id="dump" placeholder="Paste everything here — or just drop the files above. The more context, the better the analysis."></textarea>
+    <label>Your data — type or paste here (the files above are added automatically when you analyse)</label>
+    <textarea id="dump" placeholder="Type or paste anything here — and/or drop files above. Both are combined at analysis time."></textarea>
     <button onclick="doAnalyse()" id="analyseBtn">Analyse</button>
     <span id="aiStatus" class="muted"></span>
     <div id="aiOut" class="out"></div>
@@ -333,8 +350,9 @@ $('libOut').innerHTML = P.library().map(c=>`<div class="arg"><h3>${esc(c.name)} 
 
 // ---- AI analyser (BYOK + WebLLM), grounded in the corpus ----
 $('engine').onchange = ()=>{
-  const e=$('engine').value, byok=e!=='webllm';
-  $('byok').style.display = byok?'block':'none';
+  const e=$('engine').value;
+  $('webllmPanel').style.display = e==='webllm'?'block':'none';
+  $('byok').style.display = e!=='webllm'?'block':'none';
   const oa = e==='openai';
   $('baseUrl').style.display = $('baseUrlLbl').style.display = oa?'block':'none';
   $('model').placeholder = e==='anthropic'?'claude-sonnet-5':'gpt-4o-mini / your model';
@@ -366,13 +384,29 @@ async function callOpenAI(sys,user,key,model,base){
   if(!res.ok) throw new Error('Provider error '+res.status+' — check your key/model/base URL.');
   const j=await res.json(); return j.choices[0].message.content;
 }
-let webllmEngine=null;
+// WebLLM: an EXPLICIT download with a progress bar, WebGPU-checked. Cached after the first time.
+let webllmEngine=null, webllmReady=false;
+async function downloadModel(){
+  const btn=$('dlModel'), bar=$('dlBar'), fill=$('dlFill'), st=(t)=>$('dlStatus').textContent=t;
+  if(!('gpu' in navigator)){ st('⚠️ This browser has no WebGPU, so a local model can’t run here. Use Chrome or Edge on desktop — or switch the engine to Bring Your Own Key (works anywhere).'); return; }
+  const model=$('webllmModel').value;
+  btn.disabled=true; webllmReady=false; bar.style.display='block'; fill.style.width='0%'; st('Loading the WebLLM engine (a few seconds) — then the model download begins…');
+  try{
+    const { CreateMLCEngine } = await import('https://esm.run/@mlc-ai/web-llm');
+    webllmEngine = await CreateMLCEngine(model, { initProgressCallback:(p)=>{
+      if(typeof p.progress==='number') fill.style.width=Math.max(2,Math.round(p.progress*100))+'%';
+      st(p.text||'Downloading…');
+    }});
+    webllmReady=true; fill.style.width='100%';
+    st('✓ Model ready — cached on this device and now runs offline. Nothing you analyse leaves your browser.');
+  }catch(err){ bar.style.display='none'; st('Could not load the model: '+(err.message||err)+'. Try a smaller model, or use Bring Your Own Key.'); }
+  btn.disabled=false;
+}
+$('dlModel').onclick=downloadModel;
 async function callWebLLM(sys,user,setStatus){
-  const { CreateMLCEngine } = await import('https://esm.run/@mlc-ai/web-llm');
-  if(!webllmEngine){ setStatus('Downloading a local model (first time only — stays cached, nothing leaves your device)…');
-    webllmEngine = await CreateMLCEngine('Llama-3.2-3B-Instruct-q4f16_1-MLC',{ initProgressCallback:(p)=>setStatus(p.text) }); }
+  if(!webllmReady) throw new Error('Local model not loaded — click “⬇ Download & load model” above first (or use Bring Your Own Key).');
   setStatus('Analysing locally…');
-  const r = await webllmEngine.chat.completions.create({messages:[{role:'system',content:sys},{role:'user',content:user}]});
+  const r = await webllmEngine.chat.completions.create({messages:[{role:'system',content:sys},{role:'user',content:user}], temperature:0.3, max_tokens:2000});
   return r.choices[0].message.content;
 }
 // ---- all-format file ingestion (client-side; only the libraries come from a CDN) ----
@@ -386,16 +420,32 @@ const EXTRACT = {
     return out.join('\n\n');
   },
   extractImage: async (f)=>{ const T=(await import('https://esm.run/tesseract.js')).default; const { data }=await T.recognize(f,'eng'); return data.text; },
-  extractDocx: async (f)=>{ const m=(await import('https://esm.run/mammoth')).default; const { value }=await m.extractRawText({arrayBuffer:await f.arrayBuffer()}); return value; },
+  extractDocx: async (f)=>{ // mammoth doesn't load as browser ESM — use its UMD browser build (→ window.mammoth)
+    if(!window.mammoth){ await new Promise((ok,no)=>{ const s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/mammoth@1/mammoth.browser.min.js'; s.onload=ok; s.onerror=()=>no(new Error('failed to load the Word extractor')); document.head.appendChild(s); }); }
+    const { value }=await window.mammoth.extractRawText({arrayBuffer:await f.arrayBuffer()}); return value; },
 };
+let ingested=[];
+function renderIngested(){
+  const el=$('ingestList');
+  if(!ingested.length){ el.innerHTML=''; return; }
+  el.innerHTML = ingested.map((f,i)=>{
+    const icon = f.pending?'⏳':(f.error?'⚠️':'✅');
+    const status = f.pending ? '<span class="muted">reading…</span>'
+      : (f.error ? `<span class="cp">${esc(f.error)}</span>` : `<span class="k">${f.chars} chars</span> <span class="muted">(${esc(f.kind)})</span>`);
+    return `<div class="frow"><span>${icon} ${esc(f.name)} — ${status}</span><button class="x" data-i="${i}" title="Remove this file">✕</button></div>`;
+  }).join('') + `<button class="ghost" id="clearFiles" style="margin-top:2px">Clear all files</button>`;
+  el.querySelectorAll('.x').forEach(b=>b.onclick=()=>{ ingested.splice(+b.dataset.i,1); renderIngested(); });
+  $('clearFiles').onclick=()=>{ ingested=[]; renderIngested(); };
+}
 async function handleFiles(list){
   for(const f of Array.from(list||[])){
-    const row=document.createElement('div'); row.className='muted'; row.textContent=`⏳ ${f.name} — reading…`; $('ingestList').appendChild(row);
+    const slot={name:f.name, kind:'…', text:'', chars:0, pending:true};
+    ingested.push(slot); renderIngested();
     const r=await I.ingest(f, EXTRACT);
-    if(r.error){ row.innerHTML=`⚠️ <span class="cp">${esc(f.name)}: ${esc(r.error)}</span>`; }
-    else { row.innerHTML=`✅ ${esc(f.name)} <span class="k">${r.chars} chars</span> <span class="muted">(${esc(r.kind)})</span>`;
-      const cur=$('dump').value; $('dump').value=(cur?cur+'\n\n':'')+`===== ${f.name} (${r.kind}) =====\n`+r.text; }
+    Object.assign(slot, r, {pending:false});
+    renderIngested();
   }
+  $('files').value='';   // let the same file be re-added after removal
 }
 $('pickBtn').onclick=()=>$('files').click();
 $('files').onchange=(e)=>handleFiles(e.target.files);
@@ -405,13 +455,16 @@ const dz=$('drop');
 dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('over');handleFiles(e.dataTransfer.files);});
 
 window.doAnalyse = async ()=>{
-  const dump=$('dump').value.trim(); if(!dump){ $('aiStatus').textContent='Paste your data first.'; return; }
+  const typed=$('dump').value.trim();
+  const corpus=I.assembleCorpus(ingested);
+  const combined=[typed, corpus].filter(Boolean).join('\n\n');
+  if(!combined){ $('aiStatus').textContent='Add some data first — type or paste above, or drop in files.'; return; }
   const btn=$('analyseBtn'), setStatus=(t)=>$('aiStatus').textContent=t;
   btn.disabled=true; $('aiOut').textContent=''; setStatus('Working…');
   const sys=systemPrompt();
   // include the deterministic strategy if it was run, so the AI builds on it
   const seed = window.lastStrategy ? '\n\n[Deterministic engine already identified these argument lines: '+window.lastStrategy.arguments.map(a=>a.theme).join('; ')+']' : '';
-  const user='Here is my situation and data:\n\n'+dump+seed;
+  const user='Here is my situation and data:\n\n'+combined+seed;
   try{
     const e=$('engine').value; let text;
     if(e==='anthropic') text=await callAnthropic(sys,user,$('apiKey').value.trim(),$('model').value.trim());
