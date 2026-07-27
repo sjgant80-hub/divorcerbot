@@ -126,6 +126,75 @@ test('CMS never throws on bad input; needs a valid child count and income', () =
   assert.equal(cmsMaintenance({ grossWeeklyIncome: 'lots', children: 1 }).ok, false);
 });
 
+// ── hardening: exact boundaries a legal calculator must get right ─────────────
+test('CMS £7 boundary: income exactly £7 is flat (£7), income £0 is nil (£0)', () => {
+  assert.equal(cmsMaintenance({ grossWeeklyIncome: 7, children: 1 }).weekly, 7);   // flat, not nil
+  assert.equal(cmsMaintenance({ grossWeeklyIncome: 7, children: 1 }).rate, 'flat');
+  assert.equal(cmsMaintenance({ grossWeeklyIncome: 0, children: 1 }).weekly, 0);   // valid input, nil
+  assert.equal(cmsMaintenance({ grossWeeklyIncome: 0, children: 1 }).rate, 'nil');
+  assert.equal(cmsMaintenance({ grossWeeklyIncome: 5, children: 1 }).rate, 'nil');
+});
+
+test('CMS cap boundary: exactly £3,000 is NOT flagged for court; £3,000.01 uses the cap', () => {
+  const at = cmsMaintenance({ grossWeeklyIncome: 3000, children: 1 });
+  assert.equal(at.cappedAtCourt, false);
+  assert.equal(at.weekly, 294);                                                    // 0.12×800 + 0.09×2200
+  assert.equal(cmsMaintenance({ grossWeeklyIncome: 3000.01, children: 1 }).cappedAtCourt, true);
+});
+
+test('CMS flat rate drops to nil with 52+ shared-care nights (and records extraWeekly honestly)', () => {
+  assert.equal(cmsMaintenance({ grossWeeklyIncome: 80, children: 1, sharedCareNights: 52 }).weekly, 0);
+  assert.equal(cmsMaintenance({ grossWeeklyIncome: 80, children: 1, sharedCareNights: 51 }).weekly, 7); // 51 < 52
+  assert.equal(cmsMaintenance({ grossWeeklyIncome: 500, children: 1, sharedCareNights: 52 }).sharedCare.extraWeekly, 0);
+  assert.equal(cmsMaintenance({ grossWeeklyIncome: 500, children: 1, sharedCareNights: 175 }).sharedCare.extraWeekly, 7);
+});
+
+test('CMS shared-care band edges: 104 and 156 nights step up (2/7, 3/7)', () => {
+  assert.equal(cmsMaintenance({ grossWeeklyIncome: 700, children: 1, sharedCareNights: 104 }).sharedCare.reductionFraction, 2 / 7);
+  assert.equal(cmsMaintenance({ grossWeeklyIncome: 700, children: 1, sharedCareNights: 103 }).sharedCare.reductionFraction, 1 / 7);
+  assert.equal(cmsMaintenance({ grossWeeklyIncome: 700, children: 1, sharedCareNights: 156 }).sharedCare.reductionFraction, 3 / 7);
+});
+
+test('CMS rejects an invalid child count even when income is valid', () => {
+  assert.equal(cmsMaintenance({ grossWeeklyIncome: 500, children: 0 }).ok, false);
+});
+
+test('eligibility year boundary: E&W at exactly 1 year is eligible; the blocker reads "1 year" (singular)', () => {
+  assert.equal(assessEligibility({ jurisdiction: 'england-wales', marriedYears: 1, marriageRecognised: true }).eligible, true);
+  const blocked = assessEligibility({ jurisdiction: 'england-wales', marriedYears: 0.9, marriageRecognised: true });
+  assert.equal(blocked.eligible, false);
+  assert.ok(blocked.blockers.some(b => /1 year\b/.test(b) && !/1 years/.test(b)), 'singular "1 year"');
+});
+
+test('non-finite years (Infinity) is not eligible — a real, finite number is required', () => {
+  assert.equal(assessEligibility({ jurisdiction: 'england-wales', marriedYears: Infinity, marriageRecognised: true }).eligible, false);
+});
+
+test('Scotland with no years entered is still eligible and gets no spurious year prompt', () => {
+  const r = assessEligibility({ jurisdiction: 'scotland', marriageRecognised: true });
+  assert.equal(r.eligible, true);
+  assert.ok(!r.notes.some(n => /at least 0/.test(n)));
+});
+
+test('NI blocker mentions a separation order; E&W blocker does not', () => {
+  assert.ok(assessEligibility({ jurisdiction: 'northern-ireland', marriedYears: 1, marriageRecognised: true }).blockers.some(b => /separation order/.test(b)));
+  assert.ok(!assessEligibility({ jurisdiction: 'england-wales', marriedYears: 0.5, marriageRecognised: true }).blockers.some(b => /separation order/.test(b)));
+});
+
+test('a fault jurisdiction with no facts gets the "establish a fact" note; a no-fault one never does', () => {
+  assert.ok(assessEligibility({ jurisdiction: 'scotland', marriedYears: 2, factsAvailable: [] }).notes.some(n => /establish one of/.test(n)));
+  assert.ok(!assessEligibility({ jurisdiction: 'scotland', marriedYears: 2, factsAvailable: ['Adultery'] }).notes.some(n => /establish one of/.test(n)));
+  assert.ok(!assessEligibility({ jurisdiction: 'england-wales', marriedYears: 3, factsAvailable: [] }).notes.some(n => /establish one of/.test(n)));
+});
+
+test('timeline apply-by date is exactly 12 months after the conditional order (same day of month)', () => {
+  const r = divorceTimeline({ jurisdiction: 'england-wales', applicationIssuedISO: '2024-01-01' });
+  const c = new Date(r.conditionalOrderEarliest + 'T00:00:00Z');
+  const applyBy = new Date(r.finalOrderApplyBy + 'T00:00:00Z');
+  assert.equal(applyBy.getUTCDate(), c.getUTCDate(), 'day of month preserved (month-clamp not misfiring)');
+  assert.equal((applyBy.getUTCFullYear() - c.getUTCFullYear()) * 12 + (applyBy.getUTCMonth() - c.getUTCMonth()), 12);
+});
+
 // ── financial / s.25 ──────────────────────────────────────────────────────────
 test('s25Factors lists all eight statutory factors + the child-welfare first consideration', () => {
   const s = s25Factors();

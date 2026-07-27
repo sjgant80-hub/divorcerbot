@@ -1,0 +1,67 @@
+[
+  {
+    "mutation": "<= → <",
+    "snippet": "if (input.onBenefits === true || gwi <= 100) {",
+    "reason": "equivalent mutant — the CMS rate-band boundary is continuous (the amount matches on both sides), so < vs <= is indistinguishable"
+  },
+  {
+    "mutation": "<= → <",
+    "snippet": "if (adjusted <= 800) { weekly = CMS.basic[t] * adjusted; rate = 'basic'; notes.push('Basic",
+    "reason": "equivalent mutant — the CMS rate-band boundary is continuous (the amount matches on both sides), so < vs <= is indistinguishable"
+  },
+  {
+    "mutation": "> → >=",
+    "snippet": "marriageMinimumYears: 1,                 // must be married > 1 year (DDSA 2020 / MCA 1973",
+    "reason": "false positive — the operator is inside a comment (\"> 1 year\"), not code"
+  },
+  {
+    "mutation": "< → <=",
+    "snippet": "if (gwi < 200) {",
+    "reason": "equivalent mutant — the CMS rate-band boundary is continuous (the amount matches on both sides), so < vs <= is indistinguishable"
+  },
+  {
+    "mutation": "< → <=",
+    "snippet": "if (weekly < 0) weekly = 0;",
+    "reason": "equivalent mutant — weekly is exactly 0 at this point, so `< 0` vs `<= 0` clamp identically"
+  },
+  {
+    "mutation": "&& → ||",
+    "snippet": "const num = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : NaN);",
+    "reason": "equivalent mutant — every consumer of num() re-checks isFinite, masking the && vs || difference"
+  },
+  {
+    "mutation": "&& → ||",
+    "snippet": "(j.marriageMinimumYears === 0 || (Number.isFinite(years) && years >= j.marriageMinimumYear",
+    "reason": "equivalent mutant — num() sanitizes non-finite years to NaN before this check, so NaN>=min is always false and && vs || is indistinguishable"
+  },
+  {
+    "mutation": "&& → ||",
+    "snippet": "if (Number.isFinite(nights) && nights >= 52) {",
+    "reason": "equivalent mutant — the shared-care band lookup rejects sub-52 nights anyway, so entering the branch has no observable effect"
+  },
+  {
+    "mutation": "|| → &&",
+    "snippet": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) ret",
+    "reason": "equivalent mutant — JS Date rollover couples the year/month/day checks, so no real date input can isolate a single condition"
+  },
+  {
+    "mutation": "|| → &&",
+    "snippet": "if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) ret",
+    "reason": "equivalent mutant — JS Date rollover couples the year/month/day checks, so no real date input can isolate a single condition"
+  },
+  {
+    "mutation": "+ 1 → - 1",
+    "snippet": "// then 6 weeks + 1 day (43 days) after the conditional order before you can apply for the",
+    "reason": "false positive — the operator is inside a comment (\"6 weeks + 1 day\"), not code"
+  },
+  {
+    "mutation": "+ 1 → - 1",
+    "snippet": "const finalEarliest = addDays(conditionalEarliest, 43); // 6 weeks + 1 day AFTER the condi",
+    "reason": "false positive — the operator is inside a comment (\"6 weeks + 1 day\"), not code"
+  },
+  {
+    "mutation": "+ 1 → - 1",
+    "snippet": "{ at: toISO(finalEarliest), what: 'Earliest you can apply for the FINAL order (6 weeks + 1",
+    "reason": "false positive — the operator is inside a comment (\"6 weeks + 1 day\"), not code"
+  }
+]

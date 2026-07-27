@@ -110,6 +110,30 @@ test('empty facts → no invented arguments, general s.25 still noted; never thr
   assert.doesNotThrow(() => caseStrategy({ qualifications: 'MA English' })); // string not array
 });
 
+// ── hardening: each trigger fact must fire its argument on its OWN ────────────
+test('each single trigger fact fires its argument independently (no collapsed OR-conditions)', () => {
+  const has = (facts, re) => caseStrategy(facts).arguments.some(a => re.test(a.theme));
+  // earning capacity — any one of the three triggers
+  assert.ok(has({ underEmployed: true }, /earning capacity/i));
+  assert.ok(has({ qualifications: ['MA'] }, /earning capacity/i));
+  assert.ok(has({ formerRole: 'Head of English' }, /earning capacity/i));
+  // funding — either trigger
+  assert.ok(has({ fundingImbalance: true }, /funding field/i));
+  assert.ok(has({ opponentFamilyFunded: true }, /funding field/i));
+  // pension — either trigger
+  assert.ok(has({ militaryPension: true }, /Pension/i));
+  assert.ok(has({ pensionInDispute: true }, /Pension/i));
+  // children — each of the three triggers
+  assert.ok(has({ childrenRelocated: true }, /Children/i));
+  assert.ok(has({ contactObstructed: true }, /Children/i));
+  assert.ok(has({ wantsSharedTime: true }, /Children/i));
+});
+
+test('an EMPTY qualifications array does not fire the earning-capacity argument', () => {
+  // nonEmpty([]) must be false — an empty list is not evidence of capacity
+  assert.equal(caseStrategy({ qualifications: [] }).arguments.length, 0);
+});
+
 test('library() returns the full cited corpus and everything carries the not-advice guardrail', () => {
   assert.equal(library().length, Object.keys(CASES).length);
   assert.ok(/not legal advice/i.test(NOT_ADVICE));
